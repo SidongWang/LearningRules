@@ -1,6 +1,5 @@
 from CNN import *
 import NN_database as nd
-import model_storage as ms
 getter = nd.Datagetter()
 X_train,y_train,mndata = getter.get_MNIST('train',printfirst=0)
 X_train = X_train.reshape((60000,28,28,1))

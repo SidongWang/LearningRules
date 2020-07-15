@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.signal import convolve
-import keyboard
-import datetime
 #activation functions
 def sigmoid(x):
 	return 1/(1+np.exp(-x))
@@ -268,8 +266,3 @@ class FC():
 		xgrad = np.dot(last_grad*actigrad,self.W.T)
 		xgrad = xgrad.reshape(input.shape)
 		return {'bgrad':bgrad,'wgrad':wgrad,'next_grad':xgrad}
-
-
-#model = Model([10,10,3],[1,10])
-#model.add_filters(3,[5,5],2,3,'Filter 1',preLU,0.0001)
-#model.feed_fwd(np.zeros((10,10,3)))
