@@ -47,10 +47,12 @@ def loss_grad(function,output,y):
 		res[y] = resy
 		return res
 class Trainer():
+  #Choose a regulation methos, and learning rule (update_type)
 	def __init__(self,reg_coeff,reg_type,update_type):
 		self.reg_coeff = reg_coeff
 		self.reg_type = reg_type
 		self.update_type = update_type
+  #returns statistics about the training process
 	def statistics(self,model,precision = 1e4):
 		loss = self.loss
 		all_W = model.get_W()
@@ -62,6 +64,7 @@ class Trainer():
 		return {'loss':int(precision*loss)/precision,'Wmean':int(precision*Wmean)/precision,'Wstd':int(precision*Wstd)/precision,'bmean':int(precision*bmean)/precision,'bstd':int(precision*bstd)/precision}
 	def get_losses(self):
 		return self.losses
+  #computes gradient backprop
 	def loss_gradient(self,model,loss_func,y):
 		grad = [None]*len(model.synapses)
 		last_grad = loss_grad(loss_func,model.layers[-1],y)
@@ -69,7 +72,26 @@ class Trainer():
 			grad[i] = model.synapses[i].get_grad(model.layers[i],last_grad)
 			last_grad = grad[i]['next_grad']
 		return grad
+  #update the parameters (for now, only Stochastic Gradient Descent is computed)
 	def update(self,model,wgrad,bgrad,l_rate):
+    if self.update_type == 'hebb':
+      #Hebbian learning rule
+      return model
+    if self.update_type == 'STDP':
+      #STDP learning rule
+      return model
+    if self.update_type == 'oja':
+      #Oja's learning rule
+      return model
+    if self.update_type == 'BDP':
+      #Burst dependent plasticity learning rule
+      return model
+    if self.update_type == 'BCM':
+      #BCM learning rule
+      return model
+    if self.update_type == 'sdendrites':
+      #Segregated dendrites learning rule
+      return model
 		if self.update_type == 'sgd':
 			for i in range(0,len(model.synapses)):
 				if self.reg_type == 'L2':
@@ -80,42 +102,38 @@ class Trainer():
 					reg[np.isnan(reg)]=1
 					model.synapses[i].W -= l_rate*(wgrad[i]+self.reg_coeff*reg)
 					model.synapses[i].b = model.synapses[i].b-l_rate*bgrad[i]
-		return model
+		  return model
+  #Train the model
 	def train(self,X,y,model,num_epochs,batch_size,l_rate,loss_func):
 		self.losses = []
+    #loop on the epochs
 		for i in range(0,num_epochs):
-			try:  # used try so that if user pressed other than the given key error will not be shown
-				if keyboard.is_pressed('q'):  # if key 'q' is pressed 
-					print('You Pressed A Key!')
-					break  # finishing the loop
-			except:
-				break
+      #loop on the batches
 			for j in range(0,int(len(X)/batch_size)):
-				try:  # used try so that if user pressed other than the given key error will not be shown
-					if keyboard.is_pressed('q'):  # if key 'q' is pressed 
-						print('You Pressed A Key!')
-						break  # finishing the loop
-				except:
-					break
 				wgrad = [0]*len(model.synapses)
 				bgrad = [0]*len(model.synapses)
 				interval = np.arange(j*batch_size,(j+1)*batch_size)
 				if j%20==0:
 					print('epoch ',i,', ',interval[0],':',interval[-1])
 				self.loss = 0
+        #loop on the input elements
 				for k in range(0,len(interval)):
+          #feed forward
 					model.feed_fwd(X[interval][k])
 					loss = loss_func(model.layers[-1],int(y[interval][k]))
+          #backprop
 					grad = self.loss_gradient(model,loss_func,int(y[interval][k]))
 					for n in range(0,len(model.synapses)):
 						wgrad[n]+=grad[n]['wgrad']
 						bgrad[n]+=grad[n]['bgrad']
 					self.loss += loss
-				
+				#compute the gradients given the loss for the given batch
 				for n in range(0,len(model.synapses)):
 					wgrad[n] = wgrad[n]/len(interval)
 					bgrad[n] = bgrad[n]/len(interval)
+        #update the model
 				model = self.update(model,wgrad,bgrad,l_rate)	
+        #compute the loss
 				if self.reg_type == 'L1':
 					reg = np.sum(np.abs(model.get_W()))
 				if self.reg_type == 'L2':
@@ -124,38 +142,37 @@ class Trainer():
 				self.losses.append(self.loss)
 				if j%20==0:
 					print('stats: ',self.statistics(model))
-			#interval = np.arange(interval[-1]+1,len(X))
-			#if len(interval)>0:
-			#	print('rest of batch(not calculated):')
-			#	if i==0:
-			#		print(interval[0],':',interval[-1])
-				
 		
 class Model():
-	def __init__(self,input_size,output_size):
+  #generate a new model (needs to know what input size will come through)
+	def __init__(self,input_size):
 		self.input_size = input_size
-		self.output_size = output_size
 		self.current_output_size = input_size
 		self.synapses = []
 		self.layers = [np.zeros(input_size)]
+  #add a CNN filter layer
 	def add_filters(self,n,size,padding,stride,name,activation,init_W):
 		self.synapses.append(Filter(n,size,padding,stride,name,self.current_output_size,activation,init_W))
 		self.layers.append(0)
 		self.current_output_size = self.synapses[-1].output_size
+  #add a full connected layer
 	def add_FC(self,size,name,activation,init_W):
 		self.synapses.append(FC(size,name,self.current_output_size,activation,init_W))
 		self.layers.append(0)
 		self.current_output_size = size
+  #proceed feed forward
 	def feed_fwd(self,input):
 		self.layers[0]=input
 		for i in range(0,len(self.synapses)):
 			self.layers[i+1]=self.synapses[i].feed_fwd(input)
 			input = self.layers[i+1]
+  #get the weights
 	def get_W(self):
 		all_W = np.asarray(self.synapses[0].W).flatten()
 		for i in range(1,len(self.synapses)):
 			all_W = np.concatenate((all_W,np.asarray(self.synapses[i].W).flatten()),axis=None)
 		return all_W
+  #get bias
 	def get_b(self):
 		all_b = np.asarray(self.synapses[0].b).flatten()
 		for i in range(1,len(self.synapses)):
@@ -165,6 +182,8 @@ class Model():
 		
 		
 class Filter():
+  
+	#initialize a CNN layer (n:number of filters, size:size of the window)
 	def __init__(self,n,size,padding,stride,name,input_size,activation,init_W,padding_mode = 'constant',padding_cons=0):
 		self.number = n
 		self.size = size
@@ -174,6 +193,7 @@ class Filter():
 		self.stride = stride
 		self.name = name
 		self.activation = activation
+    #list of weights and bias. One element of the list is a ndarray of wights/bias corresponding to one filter
 		self.W = []
 		self.b = []
 		for i in range(0,n):
@@ -190,6 +210,8 @@ class Filter():
 		out_sizeX = int(out_sizeX)
 		out_sizeY = int(out_sizeY)
 		self.output_size = [out_sizeX,out_sizeY,n]
+  
+	#feed forward: convolution between layer input and filter to update the neurons values
 	def feed_fwd(self,input):
 		layer = np.zeros(self.output_size)
 		self.preact_output = []
@@ -200,6 +222,8 @@ class Filter():
 			self.preact_output.append(conv)
 			layer[:,:,k] = self.activation(conv)
 		return layer
+  
+	#here, to get the gradient, I use some convolutionnal tricks to get it faster.
 	def get_grad(self,input,last_grad):
 		bgrad = 0*self.b
 		wgrad = 0*self.W
