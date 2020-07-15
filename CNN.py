@@ -72,24 +72,24 @@ class Trainer():
 		return grad
   #update the parameters (for now, only Stochastic Gradient Descent is computed)
 	def update(self,model,wgrad,bgrad,l_rate):
-    if self.update_type == 'hebb':
-      #Hebbian learning rule
-      return model
-    if self.update_type == 'STDP':
-      #STDP learning rule
-      return model
-    if self.update_type == 'oja':
-      #Oja's learning rule
-      return model
-    if self.update_type == 'BDP':
-      #Burst dependent plasticity learning rule
-      return model
-    if self.update_type == 'BCM':
-      #BCM learning rule
-      return model
-    if self.update_type == 'sdendrites':
-      #Segregated dendrites learning rule
-      return model
+		if self.update_type == 'hebb':
+		  #Hebbian learning rule
+		  return model
+		if self.update_type == 'STDP':
+		  #STDP learning rule
+		  return model
+		if self.update_type == 'oja':
+		  #Oja's learning rule
+		  return model
+		if self.update_type == 'BDP':
+		  #Burst dependent plasticity learning rule
+		  return model
+		if self.update_type == 'BCM':
+		  #BCM learning rule
+		  return model
+		if self.update_type == 'sdendrites':
+		  #Segregated dendrites learning rule
+		  return model
 		if self.update_type == 'sgd':
 			for i in range(0,len(model.synapses)):
 				if self.reg_type == 'L2':
